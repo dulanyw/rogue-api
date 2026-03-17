@@ -207,7 +207,7 @@ class GameEngine:
         for item in game_state.items:
             if hasattr(item, 'position') and item.position == player_pos:
                 if item.type == 'gold':
-                    gold = max(item.value, 1) if item.value > 0 else random.randint(10, 50)
+                    gold = item.value if item.value > 0 else random.randint(10, 50)
                     game_state.player.gold += gold
                     game_state.items.remove(item)
                     return True, [f"You pick up {gold} gold pieces."]
