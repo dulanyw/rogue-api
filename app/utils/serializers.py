@@ -1,15 +1,21 @@
 import math
+import string
 from ..core.models import Tile
 from ..config import Config
 
-def serialize_item(item):
-    return {
+INVENTORY_KEYS = string.ascii_lowercase  # 'abcdefghijklmnopqrstuvwxyz'
+
+def serialize_item(item, key=None):
+    result = {
         'id': item.id,
         'name': item.name,
         'type': item.type,
         'value': item.value,
         'description': item.description,
     }
+    if key is not None:
+        result['key'] = key
+    return result
 
 def serialize_enemy(enemy):
     return {
@@ -36,10 +42,10 @@ def serialize_player(player):
         'xp': player.xp,
         'xp_next': player.xp_next,
         'gold': player.gold,
-        'inventory': [serialize_item(i) for i in player.inventory],
+        'inventory': [serialize_item(item, key=INVENTORY_KEYS[i]) for i, item in enumerate(player.inventory)],
         'equipped_weapon': serialize_item(player.equipped_weapon) if player.equipped_weapon else None,
         'equipped_armor': serialize_item(player.equipped_armor) if player.equipped_armor else None,
-        'equipped_rings': [serialize_item(r) for r in player.equipped_rings],
+        'equipped_rings': [serialize_item(r, key=INVENTORY_KEYS[i] if i < len(INVENTORY_KEYS) else None) for i, r in enumerate(player.equipped_rings)],
     }
     return result
 

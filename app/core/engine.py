@@ -1,8 +1,11 @@
 import uuid
 import random
+import string
 from .models import GameState, Player, Enemy, Item, Tile
 from .map_gen import generate_map
 from .combat import resolve_combat
+
+_INVENTORY_KEYS = string.ascii_lowercase
 
 ENEMY_TYPES = [
     # (name, hp, attack, defense, xp_value, min_level)
@@ -222,17 +225,27 @@ class GameEngine:
         
         return False, ["Nothing to pick up here."]
 
+    def _get_item_by_key(self, inventory, item_key):
+        """Return the item at the given inventory key (a-z), or None if invalid."""
+        try:
+            index = _INVENTORY_KEYS.index(item_key)
+        except ValueError:
+            return None
+        if 0 <= index < len(inventory):
+            return inventory[index]
+        return None
+
     def _handle_use_item(self, game_state, action_data):
-        item_id = action_data.get('item_id')
-        for item in game_state.player.inventory:
-            if item.id == item_id:
-                if item.type == 'potion':
-                    heal = item.value
-                    game_state.player.hp = min(game_state.player.max_hp, game_state.player.hp + heal)
-                    game_state.player.inventory.remove(item)
-                    return True, [f"You drink {item.name} and recover {heal} HP."]
-                else:
-                    return False, ["You can't use that item directly."]
+        item_key = action_data.get('item_key')
+        item = self._get_item_by_key(game_state.player.inventory, item_key)
+        if item:
+            if item.type == 'potion':
+                heal = item.value
+                game_state.player.hp = min(game_state.player.max_hp, game_state.player.hp + heal)
+                game_state.player.inventory.remove(item)
+                return True, [f"You drink {item.name} and recover {heal} HP."]
+            else:
+                return False, ["You can't use that item directly."]
         return False, ["Item not found in inventory."]
 
     def _handle_descend(self, game_state):
@@ -266,43 +279,47 @@ class GameEngine:
         return True, [f"You remove {armor.name}."]
 
     def _handle_don_armor(self, game_state, action_data):
-        item_id = action_data.get('item_id')
-        for item in game_state.player.inventory:
-            if item.id == item_id and item.type == 'armor':
-                if game_state.player.equipped_armor:
-                    game_state.player.inventory.append(game_state.player.equipped_armor)
-                game_state.player.inventory.remove(item)
-                game_state.player.equipped_armor = item
-                return True, [f"You put on {item.name}."]
+        item_key = action_data.get('item_key')
+        item = self._get_item_by_key(game_state.player.inventory, item_key)
+        if item and item.type == 'armor':
+            if game_state.player.equipped_armor:
+                game_state.player.inventory.append(game_state.player.equipped_armor)
+            game_state.player.inventory.remove(item)
+            game_state.player.equipped_armor = item
+            return True, [f"You put on {item.name}."]
         return False, ["Armor not found."]
 
     def _handle_remove_ring(self, game_state, action_data):
-        ring_id = action_data.get('ring_id')
-        for ring in game_state.player.equipped_rings:
-            if ring.id == ring_id:
-                game_state.player.equipped_rings.remove(ring)
-                game_state.player.inventory.append(ring)
-                return True, [f"You remove {ring.name}."]
+        ring_key = action_data.get('ring_key')
+        try:
+            index = _INVENTORY_KEYS.index(ring_key)
+        except (ValueError, TypeError):
+            return False, ["Ring not found."]
+        if 0 <= index < len(game_state.player.equipped_rings):
+            ring = game_state.player.equipped_rings[index]
+            game_state.player.equipped_rings.remove(ring)
+            game_state.player.inventory.append(ring)
+            return True, [f"You remove {ring.name}."]
         return False, ["Ring not found."]
 
     def _handle_don_ring(self, game_state, action_data):
-        item_id = action_data.get('item_id')
-        for item in game_state.player.inventory:
-            if item.id == item_id and item.type == 'ring':
-                game_state.player.inventory.remove(item)
-                game_state.player.equipped_rings.append(item)
-                return True, [f"You put on {item.name}."]
+        item_key = action_data.get('item_key')
+        item = self._get_item_by_key(game_state.player.inventory, item_key)
+        if item and item.type == 'ring':
+            game_state.player.inventory.remove(item)
+            game_state.player.equipped_rings.append(item)
+            return True, [f"You put on {item.name}."]
         return False, ["Ring not found."]
 
     def _handle_switch_weapon(self, game_state, action_data):
-        item_id = action_data.get('item_id')
-        for item in game_state.player.inventory:
-            if item.id == item_id and item.type == 'weapon':
-                if game_state.player.equipped_weapon:
-                    game_state.player.inventory.append(game_state.player.equipped_weapon)
-                game_state.player.inventory.remove(item)
-                game_state.player.equipped_weapon = item
-                return True, [f"You wield {item.name}."]
+        item_key = action_data.get('item_key')
+        item = self._get_item_by_key(game_state.player.inventory, item_key)
+        if item and item.type == 'weapon':
+            if game_state.player.equipped_weapon:
+                game_state.player.inventory.append(game_state.player.equipped_weapon)
+            game_state.player.inventory.remove(item)
+            game_state.player.equipped_weapon = item
+            return True, [f"You wield {item.name}."]
         return False, ["Weapon not found."]
 
     def _enemy_turn(self, game_state):
