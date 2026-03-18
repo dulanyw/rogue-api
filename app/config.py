@@ -1,6 +1,7 @@
 class Config:
     DEBUG = False
-    STORAGE_TYPE = "memory"
+    STORAGE_TYPE = "sqlite"
+    DATABASE_URL = "sqlite:///rogue.db"
     MAX_GAMES = 1000
     INVENTORY_LIMIT = 26
     MAP_WIDTH = 80
