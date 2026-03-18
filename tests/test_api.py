@@ -1,16 +1,22 @@
 import pytest
 import json
+import tempfile
+import os
 from app.app import create_app
-from app.storage.memory_store import MemoryStore
+from app.storage.db_store import SQLiteStore
 
 @pytest.fixture
 def client():
+    # Use a temporary database file for test isolation
+    db_fd, db_path = tempfile.mkstemp(suffix='.db')
+    os.close(db_fd)
+    SQLiteStore().init_db(db_path)
     app = create_app({'TESTING': True})
-    # Clear storage between tests
-    store = MemoryStore()
+    store = SQLiteStore()
     store.clear()
     with app.test_client() as c:
         yield c
+    os.unlink(db_path)
 
 def test_create_game(client):
     resp = client.post('/api/v1/games', json={'player_name': 'TestHero', 'seed': 42})
@@ -67,7 +73,7 @@ def test_action_on_dead_game(client):
     game_id = resp.get_json()['game_id']
     
     # Manually set game to dead by loading and modifying
-    store = MemoryStore()
+    store = SQLiteStore()
     game_state = store.load(game_id)
     game_state.status = 'dead'
     store.save(game_id, game_state)

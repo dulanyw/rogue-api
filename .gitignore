@@ -24,4 +24,5 @@ ENV/
 .coverage
 htmlcov/
 *.sqlite3
+*.db
 instance/

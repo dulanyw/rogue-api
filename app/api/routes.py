@@ -1,12 +1,12 @@
 from flask import Blueprint, request, jsonify
 from ..core.engine import GameEngine
-from ..storage.memory_store import MemoryStore
+from ..storage.db_store import SQLiteStore
 from ..utils.serializers import serialize_game_state
 from ..utils.validators import validate_action
 
 bp = Blueprint('api', __name__, url_prefix='/api/v1')
 engine = GameEngine()
-store = MemoryStore()
+store = SQLiteStore()
 
 @bp.route('/games', methods=['POST'])
 def create_game():
