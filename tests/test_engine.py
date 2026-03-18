@@ -200,6 +200,7 @@ def test_use_item_potion():
     """Using a potion heals the player and removes it from inventory."""
     state = engine.create_game(seed=42)
     state.player.hp = 5
+    state.enemies = []  # prevent enemy turn from changing HP
     potion = Item("Potion of Healing", "potion", 6, "Restores 6 HP")
     state.player.inventory.append(potion)
 
@@ -214,6 +215,7 @@ def test_use_item_potion_caps_at_max_hp():
     """Using a potion does not exceed max HP."""
     state = engine.create_game(seed=42)
     state.player.hp = state.player.max_hp  # already at max
+    state.enemies = []  # prevent enemy turn from changing HP
     potion = Item("Potion of Extra Healing", "potion", 15, "Restores 15 HP")
     state.player.inventory.append(potion)
 

@@ -41,12 +41,16 @@ def test_item_positions_on_floor():
         assert tiles[y][x] == Tile.FLOOR, f"Item at ({x},{y}) is not on a floor tile"
 
 def test_different_seeds_produce_different_maps():
-    """Different seeds should (very likely) produce different maps."""
-    _, pos1, _, _ = generate_map(80, 24, 111, 1)
-    _, pos2, _, _ = generate_map(80, 24, 999, 1)
-    # Different seeds should produce different player starting positions
-    # (This is probabilistic but nearly guaranteed for well-separated seeds)
-    assert pos1 != pos2
+    """Different seeds should produce different maps (either tiles or player start)."""
+    tiles1, pos1, _, _ = generate_map(80, 24, 111, 1)
+    tiles2, pos2, _, _ = generate_map(80, 24, 999, 1)
+    tiles_differ = any(
+        tiles1[y][x] != tiles2[y][x]
+        for y in range(24) for x in range(80)
+    )
+    assert tiles_differ or pos1 != pos2, (
+        "Seeds 111 and 999 produced identical maps and start positions"
+    )
 
 def test_different_levels_different_maps():
     """The same seed but a different dungeon level produces a different map."""

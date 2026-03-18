@@ -450,8 +450,15 @@ def test_perform_action_turn_increments(client):
     resp = client.post('/api/v1/games', json={'seed': 42})
     game_id = resp.get_json()['game_id']
 
+    # Clear enemies so the enemy turn can never kill the player mid-loop
+    store = MemoryStore()
+    game_state = store.load(game_id)
+    game_state.enemies = []
+    store.save(game_id, game_state)
+
     for expected_turn in range(1, 4):
         resp = client.post(f'/api/v1/games/{game_id}/action', json={'action': 'wait'})
+        assert resp.status_code == 200
         assert resp.get_json()['state']['turn'] == expected_turn
 
 # ---------------------------------------------------------------------------
