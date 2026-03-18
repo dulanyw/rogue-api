@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from ..core.engine import GameEngine
 from ..storage.memory_store import MemoryStore
-from ..utils.serializers import serialize_game_state
+from ..utils.serializers import serialize_game_state, serialize_item, INVENTORY_KEYS
 from ..utils.validators import validate_action
 
 bp = Blueprint('api', __name__, url_prefix='/api/v1')
@@ -36,6 +36,20 @@ def get_game(game_id):
         'visible_map': serialized['visible_map'],
         'log': game_state.log,
         'status': game_state.status,
+    })
+
+@bp.route('/games/<game_id>/inventory', methods=['GET'])
+def get_inventory(game_id):
+    game_state = store.load(game_id)
+    if game_state is None:
+        return jsonify({'error': 'Game not found.'}), 404
+
+    player = game_state.player
+    return jsonify({
+        'inventory': [serialize_item(item, key=INVENTORY_KEYS[i]) for i, item in enumerate(player.inventory)],
+        'equipped_weapon': serialize_item(player.equipped_weapon) if player.equipped_weapon else None,
+        'equipped_armor': serialize_item(player.equipped_armor) if player.equipped_armor else None,
+        'equipped_rings': [serialize_item(r, key=INVENTORY_KEYS[i] if i < len(INVENTORY_KEYS) else None) for i, r in enumerate(player.equipped_rings)],
     })
 
 @bp.route('/games/<game_id>/action', methods=['POST'])

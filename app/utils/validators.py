@@ -1,8 +1,11 @@
+import string
+
 VALID_ACTIONS = {
     'move', 'attack', 'pickup', 'use_item', 'descend',
     'wait', 'remove_armor', 'don_armor', 'remove_ring', 'don_ring', 'switch_weapon'
 }
 VALID_DIRECTIONS = {'north', 'south', 'east', 'west'}
+VALID_INVENTORY_KEYS = set(string.ascii_lowercase)
 
 def validate_action(action_data):
     if not isinstance(action_data, dict):
@@ -22,8 +25,14 @@ def validate_action(action_data):
         if direction not in VALID_DIRECTIONS:
             return False, f"Invalid direction '{direction}'. Valid: {', '.join(sorted(VALID_DIRECTIONS))}"
     
-    if action == 'use_item':
-        if not action_data.get('item_id'):
-            return False, "Action 'use_item' requires 'item_id' field."
+    if action in ('use_item', 'don_armor', 'don_ring', 'switch_weapon'):
+        item_key = action_data.get('item_key')
+        if item_key not in VALID_INVENTORY_KEYS:
+            return False, f"Action '{action}' requires 'item_key' field (a single letter a-z)."
+    
+    if action == 'remove_ring':
+        ring_key = action_data.get('ring_key')
+        if ring_key not in VALID_INVENTORY_KEYS:
+            return False, "Action 'remove_ring' requires 'ring_key' field (a single letter a-z)."
     
     return True, None

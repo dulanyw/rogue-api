@@ -114,6 +114,61 @@ def test_combat_moving_into_enemy():
     # Either enemy is dead or took damage
     assert any("hits" in e or "misses" in e or "defeated" in e for e in events)
 
+def test_use_item_by_key():
+    state = engine.create_game(seed=42, player_name="Hero")
+    state.player.hp = 1
+    potion = Item("Potion of Healing", "potion", 6, "Restores HP")
+    potion.position = list(state.player.position)
+    state.items.append(potion)
+
+    # Pick up the potion so it gets an inventory key
+    engine.process_action(state, {'action': 'pickup'})
+    assert len(state.player.inventory) >= 1
+
+    hp_before = state.player.hp
+    success, events, new_state = engine.process_action(state, {'action': 'use_item', 'item_key': 'a'})
+    assert success
+    assert new_state.player.hp > hp_before
+
+def test_switch_weapon_by_key():
+    state = engine.create_game(seed=42, player_name="Hero")
+    sword = Item("Short Sword", "weapon", 3, "A short sword")
+    state.player.inventory.append(sword)
+
+    success, events, new_state = engine.process_action(state, {'action': 'switch_weapon', 'item_key': 'a'})
+    assert success
+    assert new_state.player.equipped_weapon is not None
+    assert new_state.player.equipped_weapon.name == "Short Sword"
+
+def test_don_and_remove_ring_by_key():
+    state = engine.create_game(seed=42, player_name="Hero")
+    ring = Item("Ring of Strength", "ring", 2, "Increases attack")
+    state.player.inventory.append(ring)
+
+    success, events, new_state = engine.process_action(state, {'action': 'don_ring', 'item_key': 'a'})
+    assert success
+    assert len(new_state.player.equipped_rings) == 1
+
+    success, events, new_state = engine.process_action(new_state, {'action': 'remove_ring', 'ring_key': 'a'})
+    assert success
+    assert len(new_state.player.equipped_rings) == 0
+
+def test_don_armor_by_key():
+    state = engine.create_game(seed=42, player_name="Hero")
+    armor = Item("Leather Armor", "armor", 2, "Leather armor")
+    state.player.inventory.append(armor)
+
+    success, events, new_state = engine.process_action(state, {'action': 'don_armor', 'item_key': 'a'})
+    assert success
+    assert new_state.player.equipped_armor is not None
+    assert new_state.player.equipped_armor.name == "Leather Armor"
+
+def test_invalid_item_key_returns_failure():
+    state = engine.create_game(seed=42, player_name="Hero")
+    success, events, new_state = engine.process_action(state, {'action': 'use_item', 'item_key': 'a'})
+    assert not success
+    assert any("not found" in e.lower() for e in events)
+
 def test_descend_action():
     state = engine.create_game(seed=42, player_name="Hero")
     # Place stairs at player position
